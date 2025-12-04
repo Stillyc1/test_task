@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - test_task_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:latest
+    networks:
+      - test_task_network
+
+  celery:
+    build: .
+    command: poetry run celery -A config worker -l INFO -P eventlet
+    volumes:
+      - .:/test_task
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - test_task_network
+
+  test_task:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/test_task
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    command: sh -c "poetry run python manage.py migrate && poetry run python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - test_task_network
+
+networks:
+  test_task_network:
+
+volumes:
+  postgres_data:
