@@ -6,8 +6,6 @@ from app.views import PayoutRequestViewSet
 app_name = AppConfig.name
 
 router = DefaultRouter()
-router.register(prefix=r"payouts", viewset=PayoutRequestViewSet, basename='payouts')
+router.register(prefix=r"payouts", viewset=PayoutRequestViewSet, basename="payouts")
 
-urlpatterns = [
-
-] + router.urls
+urlpatterns = [] + router.urls
